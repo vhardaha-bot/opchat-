@@ -1,0 +1,2309 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#121212" />
+  <meta name="description" content="OP Chat — सीधी बात। बिना पहचान के।" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="OP Chat" />
+  <title>OP Chat</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ===================== TOKENS ===================== */
+    :root {
+      --bg:        #121212;
+      --surface:   #1E1E1E;
+      --surface2:  #2A2A2A;
+      --surface3:  #333333;
+      --border:    #3A3A3A;
+      --accent:    #2979FF;
+      --accent-dim:#1565C0;
+      --accent-glow: rgba(41,121,255,0.18);
+      --online:    #00C853;
+      --warn:      #FF6D00;
+      --danger:    #F44336;
+      --text:      #F0F0F0;
+      --text2:     #AAAAAA;
+      --text3:     #666666;
+      --bubble-me: #1A3A6B;
+      --bubble-them:#2A2A2A;
+      --font-hi:   'Noto Sans Devanagari', sans-serif;
+      --font-en:   'Inter', sans-serif;
+      --radius:    12px;
+      --radius-sm: 8px;
+      --transition: 0.18s ease;
+    }
+
+    /* ===================== RESET ===================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-hi);
+      font-size: 15px;
+      line-height: 1.5;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+    input, textarea {
+      font-family: var(--font-hi);
+      background: none; border: none; outline: none; color: var(--text);
+    }
+    a { color: var(--accent); text-decoration: none; }
+    ::placeholder { color: var(--text3); }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ===================== APP SHELL ===================== */
+    #app {
+      height: 100dvh;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ===================== SCREENS ===================== */
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition);
+    }
+    .screen.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ===================== SPLASH ===================== */
+    #screen-splash {
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: var(--bg);
+    }
+    .splash-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .splash-icon {
+      width: 80px; height: 80px;
+      background: var(--accent);
+      border-radius: 24px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px;
+      box-shadow: 0 0 40px var(--accent-glow);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 40px var(--accent-glow); }
+      50% { box-shadow: 0 0 60px rgba(41,121,255,0.35); }
+    }
+    .splash-title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+    .splash-title span { color: var(--accent); }
+    .splash-sub {
+      font-size: 13px;
+      color: var(--text2);
+      text-align: center;
+    }
+    .splash-loader {
+      width: 40px; height: 3px;
+      background: var(--surface3);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .splash-loader-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      animation: load 1.8s ease forwards;
+    }
+    @keyframes load {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+
+    /* ===================== AUTH SCREEN ===================== */
+    #screen-auth {
+      justify-content: flex-start;
+    }
+    .auth-header {
+      padding: 48px 24px 24px;
+      text-align: center;
+    }
+    .auth-header .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .auth-header .brand-icon {
+      width: 40px; height: 40px;
+      background: var(--accent);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .auth-header .brand-name {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .auth-header .brand-name span { color: var(--accent); }
+    .auth-tagline {
+      font-size: 13px;
+      color: var(--text2);
+    }
+
+    .auth-tabs {
+      display: flex;
+      margin: 0 24px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 4px;
+      gap: 4px;
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text2);
+      border-radius: var(--radius-sm);
+      transition: all var(--transition);
+    }
+    .auth-tab.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .auth-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-input {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 13px 16px;
+      font-size: 15px;
+      color: var(--text);
+      transition: border-color var(--transition);
+    }
+    .form-input:focus {
+      border-color: var(--accent);
+    }
+    .form-input.pin-input {
+      letter-spacing: 12px;
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+      font-family: var(--font-en);
+    }
+
+    .gender-row {
+      display: flex;
+      gap: 10px;
+    }
+    .gender-btn {
+      flex: 1;
+      padding: 12px 8px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-size: 13px;
+      color: var(--text2);
+      transition: all var(--transition);
+    }
+    .gender-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      color: var(--accent);
+    }
+    .gender-btn .gender-emoji { font-size: 20px; display: block; margin-bottom: 4px; }
+
+    .char-count {
+      font-size: 11px;
+      color: var(--text3);
+      text-align: right;
+    }
+
+    /* AVATAR PICKER */
+    .avatar-picker {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+    }
+    .avatar-selected-preview {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .avatar-preview-bubble {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: var(--surface3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px;
+      border: 2.5px solid var(--accent);
+      flex-shrink: 0;
+    }
+    .avatar-preview-text {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.4;
+    }
+    .avatar-preview-text strong { color: var(--text); display: block; font-size: 14px; }
+    .avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+    }
+    .avatar-cell {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all var(--transition);
+    }
+    .avatar-cell:active { transform: scale(0.88); }
+    .avatar-cell.selected {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      transform: scale(1.1);
+    }
+    .avatar-cell.hidden-avatar { display: none; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 15px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: var(--radius);
+      transition: background var(--transition), transform 0.1s;
+      margin-top: 8px;
+    }
+    .btn-primary:active { transform: scale(0.98); background: var(--accent-dim); }
+
+    .form-note {
+      font-size: 12px;
+      color: var(--text3);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .form-err {
+      font-size: 13px;
+      color: var(--danger);
+      background: rgba(244,67,54,0.1);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      display: none;
+    }
+    .form-err.show { display: block; }
+
+    /* ===================== TOP BAR ===================== */
+    .topbar {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+      min-height: 56px;
+      flex-shrink: 0;
+    }
+    .topbar-back {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text2);
+      font-size: 20px;
+      border-radius: 50%;
+      transition: background var(--transition);
+    }
+    .topbar-back:active { background: var(--surface2); }
+    .topbar-info { flex: 1; min-width: 0; }
+    .topbar-name {
+      font-size: 16px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .topbar-status {
+      font-size: 12px;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--online);
+      display: inline-block;
+    }
+    .topbar-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .icon-btn {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text2);
+      font-size: 18px;
+      border-radius: 50%;
+      transition: background var(--transition);
+    }
+    .icon-btn:active { background: var(--surface2); }
+
+    /* ===================== HOME SCREEN ===================== */
+    #screen-home .topbar-brand {
+      display: flex; align-items: center; gap: 8px; flex: 1;
+    }
+    #screen-home .topbar-brand-icon {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    #screen-home .topbar-brand-name {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    #screen-home .topbar-brand-name span { color: var(--accent); }
+
+    .location-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 9px 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text2);
+      flex-shrink: 0;
+    }
+    .location-bar .loc-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--online);
+      flex-shrink: 0;
+      box-shadow: 0 0 6px var(--online);
+    }
+    .location-bar strong { color: var(--text); }
+
+    .home-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    /* ROOMS */
+    .room-list { display: flex; flex-direction: column; gap: 8px; }
+    .room-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .room-card:active { background: var(--surface2); }
+    .room-icon {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .room-icon.open { background: rgba(41,121,255,0.15); }
+    .room-icon.private { background: rgba(255,109,0,0.15); }
+    .room-icon.area { background: rgba(0,200,83,0.15); }
+    .room-info { flex: 1; min-width: 0; }
+    .room-name { font-size: 15px; font-weight: 600; }
+    .room-meta { font-size: 12px; color: var(--text2); }
+    .room-join {
+      padding: 7px 14px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      transition: background var(--transition);
+      flex-shrink: 0;
+    }
+    .room-join:active { background: var(--accent-dim); }
+
+    .create-room-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      color: var(--text2);
+      font-size: 14px;
+      transition: all var(--transition);
+    }
+    .create-room-btn:active { border-color: var(--accent); color: var(--accent); }
+
+    /* AI COMPANIONS */
+    .ai-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .ai-scroll::-webkit-scrollbar { display: none; }
+    .ai-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      min-width: 150px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+      transition: border-color var(--transition);
+    }
+    .ai-card:active { border-color: var(--accent); }
+    .ai-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      position: relative;
+    }
+    .ai-avatar::after {
+      content: '';
+      position: absolute;
+      bottom: 2px; right: 2px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--online);
+      border: 2px solid var(--surface);
+    }
+    .ai-name { font-size: 14px; font-weight: 700; }
+    .ai-label {
+      font-size: 10px;
+      color: var(--accent);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .ai-bio { font-size: 12px; color: var(--text2); line-height: 1.4; }
+    .ai-chat-btn {
+      padding: 8px;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      transition: background var(--transition);
+    }
+    .ai-chat-btn:active { background: var(--accent); color: #fff; }
+
+    /* ONLINE USERS PREVIEW */
+    .online-preview { display: flex; flex-direction: column; gap: 8px; }
+    .user-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: background var(--transition);
+    }
+    .user-row:active { background: var(--surface2); }
+    .user-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--surface3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .user-avatar::after {
+      content: '';
+      position: absolute;
+      bottom: 1px; right: 1px;
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--online);
+      border: 2px solid var(--surface);
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 14px; font-weight: 600; }
+    .user-bio { font-size: 12px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .user-msg-btn {
+      padding: 7px 12px;
+      background: var(--surface3);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+      transition: background var(--transition);
+    }
+    .user-msg-btn:active { background: var(--accent); }
+
+    .see-all-btn {
+      text-align: center;
+      padding: 12px;
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ===================== BOTTOM NAV ===================== */
+    .bottom-nav {
+      display: flex;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 8px 0 env(safe-area-inset-bottom, 8px);
+      flex-shrink: 0;
+    }
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 0;
+      color: var(--text3);
+      font-size: 11px;
+      transition: color var(--transition);
+      position: relative;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-item .nav-icon { font-size: 22px; line-height: 1; }
+    .nav-badge {
+      position: absolute;
+      top: 4px;
+      right: calc(50% - 14px);
+      background: var(--danger);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 10px;
+      min-width: 16px;
+      text-align: center;
+    }
+
+    /* ===================== ONLINE USERS SCREEN ===================== */
+    #screen-online .online-filters {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      overflow-x: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #screen-online .online-filters::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      padding: 7px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 13px;
+      color: var(--text2);
+      white-space: nowrap;
+      transition: all var(--transition);
+      flex-shrink: 0;
+    }
+    .filter-chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .online-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .online-user-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background var(--transition);
+    }
+    .online-user-card:active { background: var(--surface2); }
+    .ouc-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--surface3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .ouc-avatar::after {
+      content: '';
+      position: absolute;
+      bottom: 2px; right: 2px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--online);
+      border: 2px solid var(--surface);
+    }
+    .ouc-info { flex: 1; min-width: 0; }
+    .ouc-name { font-size: 15px; font-weight: 700; }
+    .ouc-loc { font-size: 11px; color: var(--text3); margin: 1px 0; }
+    .ouc-bio { font-size: 13px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ouc-chat {
+      padding: 9px 14px;
+      background: var(--accent);
+      color: #fff;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .ouc-chat:active { background: var(--accent-dim); }
+
+    /* ===================== CHAT LIST SCREEN ===================== */
+    .chat-search {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .chat-search input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .chat-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .chat-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+    }
+    .chat-item:active { background: var(--surface); }
+    .chat-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--surface2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .chat-avatar.online::after {
+      content: '';
+      position: absolute;
+      bottom: 2px; right: 2px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--online);
+      border: 2px solid var(--bg);
+    }
+    .chat-info { flex: 1; min-width: 0; }
+    .chat-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .chat-name { font-size: 15px; font-weight: 700; }
+    .chat-time { font-size: 11px; color: var(--text3); flex-shrink: 0; }
+    .chat-preview { font-size: 13px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chat-unread {
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      min-width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .ai-tag {
+      font-size: 10px;
+      background: rgba(41,121,255,0.15);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    /* ===================== CHAT ROOM SCREEN ===================== */
+    #screen-chat {
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .date-divider {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text3);
+      margin: 4px 0;
+    }
+    .date-divider span {
+      background: var(--surface);
+      padding: 3px 10px;
+      border-radius: 10px;
+    }
+    .msg-wrapper {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+    }
+    .msg-wrapper.mine { align-self: flex-end; align-items: flex-end; }
+    .msg-wrapper.theirs { align-self: flex-start; align-items: flex-start; }
+    .msg-sender {
+      font-size: 11px;
+      color: var(--text3);
+      margin-bottom: 3px;
+      padding-left: 4px;
+    }
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.5;
+      position: relative;
+      word-break: break-word;
+    }
+    .msg-wrapper.mine .msg-bubble {
+      background: var(--bubble-me);
+      border-bottom-right-radius: 4px;
+      color: var(--text);
+    }
+    .msg-wrapper.theirs .msg-bubble {
+      background: var(--bubble-them);
+      border-bottom-left-radius: 4px;
+    }
+    .msg-meta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 3px;
+      padding: 0 4px;
+    }
+    .msg-time { font-size: 11px; color: var(--text3); }
+    .msg-tick { font-size: 13px; color: var(--accent); }
+    .msg-report-btn {
+      font-size: 14px;
+      color: var(--text3);
+      padding: 2px 4px;
+    }
+
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      max-width: 100px;
+      background: var(--bubble-them);
+      border-radius: 18px;
+      border-bottom-left-radius: 4px;
+    }
+    .typing-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--text2);
+      animation: typing 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-5px); opacity: 1; }
+    }
+
+    .chat-input-area {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 10px 12px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .chat-input-wrap {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+    }
+    .chat-input-wrap textarea {
+      flex: 1;
+      resize: none;
+      font-size: 15px;
+      line-height: 1.4;
+      max-height: 100px;
+      overflow-y: auto;
+      background: transparent;
+    }
+    .emoji-btn { font-size: 20px; flex-shrink: 0; }
+    .send-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      transition: background var(--transition), transform 0.1s;
+    }
+    .send-btn:active { background: var(--accent-dim); transform: scale(0.92); }
+
+    /* ===================== PROFILE SCREEN ===================== */
+    .profile-hero {
+      padding: 32px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .profile-avatar {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: var(--surface3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 44px;
+      border: 3px solid var(--accent);
+    }
+    .profile-username {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .profile-location {
+      font-size: 13px;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .profile-bio {
+      font-size: 14px;
+      color: var(--text2);
+      text-align: center;
+      max-width: 280px;
+      line-height: 1.5;
+    }
+
+    .profile-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .profile-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background var(--transition);
+    }
+    .profile-item:active { background: var(--surface2); }
+    .profile-item-icon { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+    .profile-item-text { flex: 1; }
+    .profile-item-label { font-size: 14px; font-weight: 600; }
+    .profile-item-val { font-size: 12px; color: var(--text2); }
+    .profile-item-arrow { color: var(--text3); font-size: 16px; }
+
+    .profile-danger {
+      border-color: rgba(244,67,54,0.3);
+    }
+    .profile-danger .profile-item-label { color: var(--danger); }
+
+    /* ===================== REPORT SHEET ===================== */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: flex;
+      align-items: flex-end;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition);
+      z-index: 100;
+    }
+    .overlay.show { opacity: 1; pointer-events: all; }
+    .sheet {
+      width: 100%;
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 20px 20px max(20px, env(safe-area-inset-bottom));
+      transform: translateY(100%);
+      transition: transform 0.25s ease;
+    }
+    .overlay.show .sheet { transform: translateY(0); }
+    .sheet-handle {
+      width: 40px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 16px;
+    }
+    .sheet-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .report-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      transition: background var(--transition);
+      font-size: 15px;
+    }
+    .report-option:active { background: var(--surface2); }
+    .report-option-icon { font-size: 20px; width: 28px; text-align: center; }
+
+    /* ===================== TOAST ===================== */
+    #toast {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface3);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      z-index: 200;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ===================== ROOM CREATE SHEET ===================== */
+    .room-type-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .room-type-btn {
+      flex: 1;
+      padding: 12px;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text2);
+      transition: all var(--transition);
+    }
+    .room-type-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      color: var(--accent);
+    }
+
+    /* ===================== EMPTY STATE ===================== */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 40px;
+      text-align: center;
+    }
+    .empty-icon { font-size: 52px; }
+    .empty-title { font-size: 18px; font-weight: 700; }
+    .empty-sub { font-size: 14px; color: var(--text2); line-height: 1.5; }
+
+    /* ===================== UTILS ===================== */
+    .hidden { display: none !important; }
+    .spin { animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ========== SPLASH ========== -->
+  <div id="screen-splash" class="screen active">
+    <div class="splash-logo">
+      <div class="splash-icon">💬</div>
+      <div class="splash-title"><span>OP</span> Chat</div>
+      <div class="splash-sub">सीधी बात। बिना पहचान के।</div>
+      <div class="splash-loader"><div class="splash-loader-bar"></div></div>
+    </div>
+  </div>
+
+  <!-- ========== AUTH ========== -->
+  <div id="screen-auth" class="screen">
+    <div class="auth-header">
+      <div class="brand">
+        <div class="brand-icon">💬</div>
+        <div class="brand-name"><span>OP</span> Chat</div>
+      </div>
+      <div class="auth-tagline">सीधी बात। बिना पहचान के।</div>
+    </div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">लॉगिन</div>
+      <div class="auth-tab" id="tab-register" onclick="switchTab('register')">नया अकाउंट</div>
+    </div>
+
+    <div class="auth-body" id="auth-body">
+      <!-- Login Form -->
+      <div id="form-login">
+        <div class="form-group">
+          <div class="form-label">Username</div>
+          <input class="form-input" id="login-username" type="text" placeholder="आपका username" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        </div>
+        <div class="form-group">
+          <div class="form-label">PIN (4 अंक)</div>
+          <input class="form-input pin-input" id="login-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+        </div>
+        <div class="form-err" id="login-err">Username या PIN गलत है।</div>
+        <button class="btn-primary" onclick="doLogin()">लॉगिन करें →</button>
+        <div class="form-note">कोई OTP नहीं। कोई email नहीं। बस username और PIN।</div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="form-register" class="hidden">
+        <div class="form-group">
+          <div class="form-label">Username चुनें</div>
+          <input class="form-input" id="reg-username" type="text" placeholder="जैसे: MountainBoy (3-16 अक्षर)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="16" />
+        </div>
+        <div class="form-group">
+          <div class="form-label">PIN (4 अंक)</div>
+          <input class="form-input pin-input" id="reg-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" />
+        </div>
+        <div class="form-group">
+          <div class="form-label">Gender</div>
+          <div class="gender-row">
+            <div class="gender-btn active" id="g-male" onclick="selectGender('male')">
+              <span class="gender-emoji">👨</span>Male
+            </div>
+            <div class="gender-btn" id="g-female" onclick="selectGender('female')">
+              <span class="gender-emoji">👩</span>Female
+            </div>
+            <div class="gender-btn" id="g-other" onclick="selectGender('other')">
+              <span class="gender-emoji">🧑</span>Other
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label">Avatar चुनो</div>
+          <div class="avatar-picker">
+            <div class="avatar-selected-preview">
+              <div class="avatar-preview-bubble" id="avatar-preview">👨</div>
+              <div class="avatar-preview-text">
+                <strong id="avatar-preview-name">Classic Boy</strong>
+                यही avatar सबको दिखेगा
+              </div>
+            </div>
+            <div class="avatar-grid" id="avatar-grid"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label">अपने बारे में लिखो (optional)</div>
+          <textarea class="form-input" id="reg-bio" rows="3" placeholder="जैसे: मुझे cricket पसंद है, Jabalpur से हूँ..." maxlength="300" oninput="updateBioCount(this)"></textarea>
+          <div class="char-count"><span id="bio-count">0</span>/50 शब्द</div>
+        </div>
+        <div class="form-err" id="reg-err">कुछ गड़बड़ हुई। फिर कोशिश करें।</div>
+        <button class="btn-primary" onclick="doRegister()">अकाउंट बनाएं →</button>
+        <div class="form-note">📍 आपकी location IP से detect होगी।<br/>कोई phone number नहीं। पूरी तरह anonymous।</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== HOME ========== -->
+  <div id="screen-home" class="screen">
+    <div class="topbar">
+      <div class="topbar-brand">
+        <div class="topbar-brand-icon">💬</div>
+        <div class="topbar-brand-name"><span>OP</span> Chat</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" onclick="showNotifInfo()" title="Notifications">🔔</button>
+        <button class="icon-btn" onclick="showScreen('profile')" title="Profile">👤</button>
+      </div>
+    </div>
+
+    <div class="location-bar">
+      <div class="loc-dot"></div>
+      <span>आपके area में <strong id="area-count">--</strong> लोग online</span>
+    </div>
+
+    <div class="home-body">
+      <!-- ROOMS -->
+      <div>
+        <div class="section-title">💬 Rooms</div>
+        <div class="room-list">
+          <div class="room-card" onclick="openRoom('area', 'आपके Area में')">
+            <div class="room-icon area">📍</div>
+            <div class="room-info">
+              <div class="room-name">आपके Area में</div>
+              <div class="room-meta" id="area-room-meta">आपके शहर के लोग</div>
+            </div>
+            <button class="room-join">Join</button>
+          </div>
+          <div class="room-card" onclick="openRoom('hindi', 'Hindi Chat')">
+            <div class="room-icon open">🌐</div>
+            <div class="room-info">
+              <div class="room-name">Hindi Chat</div>
+              <div class="room-meta">सबके लिए खुला</div>
+            </div>
+            <button class="room-join">Join</button>
+          </div>
+          <div class="room-card" onclick="openRoom('random', 'Random Chat')">
+            <div class="room-icon open">🔀</div>
+            <div class="room-info">
+              <div class="room-name">Random Chat</div>
+              <div class="room-meta">कोई भी, कहीं से भी</div>
+            </div>
+            <button class="room-join">Join</button>
+          </div>
+          <button class="create-room-btn" onclick="showCreateRoom()">
+            <span style="font-size:20px">🔒</span>
+            <span>Private Room बनाएं</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- AI COMPANIONS -->
+      <div>
+        <div class="section-title">🤖 AI Companions</div>
+        <div class="ai-scroll">
+          <div class="ai-card" onclick="openAIChat('roshni')">
+            <div class="ai-avatar">👩</div>
+            <div class="ai-name">Roshni</div>
+            <div class="ai-label">AI</div>
+            <div class="ai-bio">मन खराब हो तो बात करो</div>
+            <div class="ai-chat-btn">बात करें</div>
+          </div>
+          <div class="ai-card" onclick="openAIChat('panditji')">
+            <div class="ai-avatar">🧔</div>
+            <div class="ai-name">Pandit Ji</div>
+            <div class="ai-label">AI</div>
+            <div class="ai-bio">ज्योतिष, आध्यात्म, प्रेरणा</div>
+            <div class="ai-chat-btn">बात करें</div>
+          </div>
+          <div class="ai-card" onclick="openAIChat('priya')">
+            <div class="ai-avatar">👩</div>
+            <div class="ai-name">Priya</div>
+            <div class="ai-label">AI</div>
+            <div class="ai-bio">मस्ती, timepass, gossip</div>
+            <div class="ai-chat-btn">बात करें</div>
+          </div>
+          <div class="ai-card" onclick="openAIChat('rahul')">
+            <div class="ai-avatar">👦</div>
+            <div class="ai-name">Rahul Bhai</div>
+            <div class="ai-label">AI</div>
+            <div class="ai-bio">यार दोस्त, cricket, मज़ाक</div>
+            <div class="ai-chat-btn">बात करें</div>
+          </div>
+          <div class="ai-card" onclick="openAIChat('kavita')">
+            <div class="ai-avatar">👩</div>
+            <div class="ai-name">Kavita Didi</div>
+            <div class="ai-label">AI</div>
+            <div class="ai-bio">बड़ी बहन, life advice</div>
+            <div class="ai-chat-btn">बात करें</div>
+          </div>
+          <div class="ai-card" onclick="openAIChat('ananya')">
+            <div class="ai-avatar">👩</div>
+            <div class="ai-name">Ananya</div>
+            <div class="ai-label">AI</div>
+            <div class="ai-bio">पढ़ाई, career guidance</div>
+            <div class="ai-chat-btn">बात करें</div>
+          </div>
+          <div class="ai-card" onclick="openAIChat('suresh')">
+            <div class="ai-avatar">👨</div>
+            <div class="ai-name">Suresh Tech</div>
+            <div class="ai-label">AI</div>
+            <div class="ai-bio">Internet, tech, jugaad</div>
+            <div class="ai-chat-btn">बात करें</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ONLINE USERS PREVIEW -->
+      <div>
+        <div class="section-title">👥 Online लोग</div>
+        <div class="online-preview" id="online-preview-list">
+          <div class="user-row" onclick="openDM('demo1','👨','RahulCoder','Python सीख रहा हूँ')">
+            <div class="user-avatar">👨</div>
+            <div class="user-info">
+              <div class="user-name">RahulCoder</div>
+              <div class="user-bio">Python सीख रहा हूँ</div>
+            </div>
+            <button class="user-msg-btn">बात करें</button>
+          </div>
+          <div class="user-row" onclick="openDM('demo2','👩','Roshni_mp','नई दोस्ती पसंद है')">
+            <div class="user-avatar">👩</div>
+            <div class="user-info">
+              <div class="user-name">Roshni_mp</div>
+              <div class="user-bio">नई दोस्ती पसंद है</div>
+            </div>
+            <button class="user-msg-btn">बात करें</button>
+          </div>
+        </div>
+        <button class="see-all-btn" onclick="showScreen('online')">सभी online देखें →</button>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="nav-item active" onclick="showScreen('home')">
+        <span class="nav-icon">🏠</span>Home
+      </button>
+      <button class="nav-item" onclick="showScreen('chats')">
+        <span class="nav-icon">💬</span>Chats
+        <span class="nav-badge hidden" id="chat-badge">2</span>
+      </button>
+      <button class="nav-item" onclick="showScreen('online')">
+        <span class="nav-icon">👥</span>Online
+      </button>
+      <button class="nav-item" onclick="showScreen('profile')">
+        <span class="nav-icon">👤</span>Profile
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== ONLINE USERS ========== -->
+  <div id="screen-online" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="showScreen('home')">←</button>
+      <div class="topbar-info">
+        <div class="topbar-name">Online लोग</div>
+        <div class="topbar-status"><span class="status-dot"></span><span id="online-count-label">-- online</span></div>
+      </div>
+    </div>
+
+    <div class="online-filters">
+      <div class="filter-chip active" onclick="filterOnline('all', this)">सभी</div>
+      <div class="filter-chip" onclick="filterOnline('area', this)">आपके Area में</div>
+      <div class="filter-chip" onclick="filterOnline('male', this)">👨 Male</div>
+      <div class="filter-chip" onclick="filterOnline('female', this)">👩 Female</div>
+    </div>
+
+    <div class="online-list" id="online-list">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- ========== CHAT LIST ========== -->
+  <div id="screen-chats" class="screen">
+    <div class="topbar">
+      <div class="topbar-info" style="padding-left:4px">
+        <div class="topbar-name">Messages</div>
+      </div>
+    </div>
+    <div class="chat-search">
+      <input type="search" placeholder="🔍  Search chats..." />
+    </div>
+    <div class="chat-list" id="chat-list">
+      <div class="empty-state">
+        <div class="empty-icon">💬</div>
+        <div class="empty-title">कोई chat नहीं</div>
+        <div class="empty-sub">Online users से बात शुरू करो या AI Companions से मिलो।</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CHAT ROOM ========== -->
+  <div id="screen-chat" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="leaveChat()">←</button>
+      <div class="topbar-info">
+        <div class="topbar-name" id="chat-name">Roshni</div>
+        <div class="topbar-status"><span class="status-dot"></span><span id="chat-status">online</span></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" onclick="showReport(null, 'user')">⚠️</button>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+      <div class="date-divider"><span>आज</span></div>
+    </div>
+
+    <div class="chat-input-area">
+      <div class="chat-input-wrap">
+        <textarea id="chat-input" placeholder="लिखो..." rows="1"
+          oninput="autoResizeInput(this)" onkeydown="handleEnter(event)"></textarea>
+        <button class="emoji-btn" onclick="toggleEmoji()">😊</button>
+      </div>
+      <button class="send-btn" onclick="sendMessage()">▶️</button>
+    </div>
+  </div>
+
+  <!-- ========== PROFILE ========== -->
+  <div id="screen-profile" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="showScreen('home')">←</button>
+      <div class="topbar-info" style="padding-left:4px">
+        <div class="topbar-name">Profile</div>
+      </div>
+    </div>
+
+    <div class="profile-hero">
+      <div class="profile-avatar" id="profile-avatar">👨</div>
+      <div class="profile-username" id="profile-username">--</div>
+      <div class="profile-location">📍 <span id="profile-location">Detecting...</span></div>
+      <div class="profile-bio" id="profile-bio">Bio loading...</div>
+    </div>
+
+    <div class="profile-body">
+      <div class="profile-item" onclick="editProfile()">
+        <div class="profile-item-icon">✏️</div>
+        <div class="profile-item-text">
+          <div class="profile-item-label">Profile Edit करें</div>
+          <div class="profile-item-val">Bio, username बदलें</div>
+        </div>
+        <div class="profile-item-arrow">›</div>
+      </div>
+      <div class="profile-item" onclick="changePIN()">
+        <div class="profile-item-icon">🔒</div>
+        <div class="profile-item-text">
+          <div class="profile-item-label">PIN बदलें</div>
+          <div class="profile-item-val">4 अंक का नया PIN</div>
+        </div>
+        <div class="profile-item-arrow">›</div>
+      </div>
+      <div class="profile-item" onclick="toggleSound()">
+        <div class="profile-item-icon">🔔</div>
+        <div class="profile-item-text">
+          <div class="profile-item-label">Notification Sound</div>
+          <div class="profile-item-val" id="sound-status">चालू</div>
+        </div>
+        <div class="profile-item-arrow">›</div>
+      </div>
+      <div class="profile-item" onclick="showGrievance()">
+        <div class="profile-item-icon">📋</div>
+        <div class="profile-item-text">
+          <div class="profile-item-label">Report / Grievance</div>
+          <div class="profile-item-val">grievance@mxpin.in</div>
+        </div>
+        <div class="profile-item-arrow">›</div>
+      </div>
+      <div class="profile-item profile-danger" onclick="doLogout()">
+        <div class="profile-item-icon">🚪</div>
+        <div class="profile-item-text">
+          <div class="profile-item-label">Logout</div>
+          <div class="profile-item-val">इस device से logout</div>
+        </div>
+      </div>
+      <div class="form-note" style="padding: 8px 4px;">
+        OP Chat — opchat.mxpin.in<br/>
+        Chat 24 घंटे में delete। Account 90 दिन inactive पर delete।
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== REPORT SHEET ========== -->
+  <div class="overlay" id="report-overlay" onclick="closeReport(event)">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">⚠️ Report करें</div>
+      <div class="report-option" onclick="submitReport('spam')">
+        <div class="report-option-icon">🤖</div>Spam / Bot
+      </div>
+      <div class="report-option" onclick="submitReport('harassment')">
+        <div class="report-option-icon">😡</div>Harassment
+      </div>
+      <div class="report-option" onclick="submitReport('inappropriate')">
+        <div class="report-option-icon">🚫</div>Inappropriate Content
+      </div>
+      <div class="report-option" onclick="submitReport('fraud')">
+        <div class="report-option-icon">💸</div>Fraud / Scam
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== CREATE ROOM SHEET ========== -->
+  <div class="overlay" id="create-room-overlay" onclick="closeCreateRoom(event)">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">🔒 Room बनाएं</div>
+      <div class="room-type-row">
+        <div class="room-type-btn active" id="rt-open" onclick="setRoomType('open')">🌐 Open</div>
+        <div class="room-type-btn" id="rt-private" onclick="setRoomType('private')">🔒 Private</div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Room का नाम</div>
+        <input class="form-input" id="room-name-input" type="text" placeholder="जैसे: Mandla Friends" maxlength="30" />
+      </div>
+      <div class="form-group" id="room-pass-group" style="display:none">
+        <div class="form-label">Password (optional)</div>
+        <input class="form-input" id="room-pass-input" type="text" placeholder="खाली छोड़ सकते हैं" maxlength="20" />
+      </div>
+      <button class="btn-primary" style="margin-top:16px" onclick="createRoom()">Room बनाएं</button>
+    </div>
+  </div>
+
+  <!-- ========== TOAST ========== -->
+  <div id="toast"></div>
+
+</div>
+
+<script>
+// ===================== CONFIG =====================
+const API_BASE = 'https://api.mxpin.in'; // Hostinger backend
+
+// ===================== STATE =====================
+const state = {
+  user: null,
+  currentScreen: 'splash',
+  currentChat: null,
+  currentChatType: null, // 'dm' | 'room' | 'ai'
+  messages: {},
+  onlineUsers: [],
+  pollTimer: null,
+  soundEnabled: true,
+  selectedGender: 'male',
+  selectedAvatar: null,
+  roomType: 'open',
+};
+
+// ===================== AI CHARACTERS =====================
+const AI_CHARS = {
+  roshni: {
+    name: 'Roshni', emoji: '👩', label: 'AI Companion',
+    prompt: `तुम Roshni हो — एक समझदार और caring दोस्त। तुम हमेशा warm, empathetic और supportive रहती हो। Hindi में बात करो, simple और dil se। अगर कोई दुखी हो तो सुनो। छोटे छोटे जवाब दो — 2-3 sentences max। कभी "As an AI" मत कहो।`
+  },
+  panditji: {
+    name: 'Pandit Ji', emoji: '🧔', label: 'AI Companion',
+    prompt: `तुम Pandit Ji हो — ज्योतिष, वास्तु और आध्यात्म के जानकार। सरल हिंदी में बात करो। प्रेरणादायक बातें कहो। राशिफल, जीवन दर्शन, योग — सब पर guidance दो। "आशीर्वाद" जैसे warm words use करो। 3-4 sentences max। कभी "As an AI" मत कहो।`
+  },
+  priya: {
+    name: 'Priya', emoji: '👩', label: 'AI Companion',
+    prompt: `तुम Priya हो — मस्त, funky और energetic लड़की। Hinglish में बात करो — mix of Hindi and English। Gossip, Bollywood, cricket, memes — सब पर मज़े से बात करो। थोड़ा sarcasm ठीक है। 2-3 sentences max। कभी "As an AI" मत कहो।`
+  },
+  rahul: {
+    name: 'Rahul Bhai', emoji: '👦', label: 'AI Companion',
+    prompt: `तुम Rahul Bhai हो — एकदम देसी MP/UP वाले यार। Cricket, movies, desi life — सब पर casual बात करते हो। "भाई", "यार", "क्या बात है" use करो। Simple Hinglish। 2-3 lines max। कभी "As an AI" मत कहो।`
+  },
+  kavita: {
+    name: 'Kavita Didi', emoji: '👩', label: 'AI Companion',
+    prompt: `तुम Kavita Didi हो — बड़ी बहन जैसी। Life advice, relationships, ghar ki baatein — warm Hindi में। Loving but practical। "बेटा", "सुनो" जैसे words use करो। 3-4 sentences max। कभी "As an AI" मत कहो।`
+  },
+  ananya: {
+    name: 'Ananya', emoji: '👩', label: 'AI Companion',
+    prompt: `तुम Ananya हो — padhi-likhi, career-focused। Study tips, exam prep, career guidance — clear Hindi/English में। Positive aur motivating। 3-4 sentences max। कभी "As an AI" मत कहो।`
+  },
+  suresh: {
+    name: 'Suresh Tech', emoji: '👨', label: 'AI Companion',
+    prompt: `तुम Suresh Tech हो — Internet aur technology expert। Simple Hinglish में tech explain करते हो। Mobile tips, internet jugaad, apps — सब पर helpful। "Simple hai bhai" attitude। 3-4 sentences max। कभी "As an AI" मत कहो।`
+  }
+};
+
+// ===================== SCREEN MANAGER =====================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + name);
+  if (el) el.classList.add('active');
+  state.currentScreen = name;
+  updateNavActive(name);
+}
+
+function updateNavActive(name) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const map = { home: 0, chats: 1, online: 2, profile: 3 };
+  if (map[name] !== undefined) {
+    document.querySelectorAll('.nav-item')[map[name]]?.classList.add('active');
+  }
+}
+
+// ===================== SPLASH → AUTH / HOME =====================
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const saved = localStorage.getItem('op_user');
+    if (saved) {
+      try {
+        state.user = JSON.parse(saved);
+        initHome();
+        showScreen('home');
+      } catch {
+        showScreen('auth');
+      }
+    } else {
+      showScreen('auth');
+    }
+  }, 1900);
+});
+
+// ===================== AVATAR DATA =====================
+const AVATARS = {
+  male: [
+    { e: '👦', n: 'Chotu' },
+    { e: '🧒', n: 'Munna' },
+    { e: '👨', n: 'Classic Boy' },
+    { e: '🧔', n: 'Daadiwala' },
+    { e: '👨‍🦱', n: 'Curly Boy' },
+    { e: '👨‍🦰', n: 'Ginger Boy' },
+    { e: '👨‍🦳', n: 'Silver Fox' },
+    { e: '👨‍🦲', n: 'Taklu Bhai' },
+    { e: '🧑‍💻', n: 'Coder Bhai' },
+    { e: '👨‍🎓', n: 'Padha-likha' },
+    { e: '👨‍🏫', n: 'Master Ji' },
+    { e: '👨‍🌾', n: 'Kisan' },
+    { e: '👨‍🍳', n: 'Chef Bhai' },
+    { e: '👨‍🔧', n: 'Mistri' },
+    { e: '👨‍🎤', n: 'Singer' },
+    { e: '👨‍🎨', n: 'Kalakar' },
+    { e: '🕵️', n: 'Detective' },
+    { e: '👮', n: 'Police Bhai' },
+    { e: '💂', n: 'Guard' },
+    { e: '🧑‍🚀', n: 'Astronaut' },
+    { e: '🧙', n: 'Jadugaar' },
+    { e: '🧝', n: 'Elf Bhai' },
+    { e: '🦸', n: 'Hero' },
+    { e: '🤴', n: 'Prince' },
+    { e: '👳', n: 'Pagdiwala' },
+  ],
+  female: [
+    { e: '👧', n: 'Chutki' },
+    { e: '🧒', n: 'Munni' },
+    { e: '👩', n: 'Classic Girl' },
+    { e: '👩‍🦱', n: 'Curly Girl' },
+    { e: '👩‍🦰', n: 'Lal Baal' },
+    { e: '👩‍🦳', n: 'Silver Didi' },
+    { e: '👩‍🦲', n: 'Bold Girl' },
+    { e: '🧑‍💻', n: 'Coder Didi' },
+    { e: '👩‍🎓', n: 'Padhi-likhi' },
+    { e: '👩‍🏫', n: 'Teacher Didi' },
+    { e: '👩‍🌾', n: 'Kisaan Beti' },
+    { e: '👩‍🍳', n: 'Chef Didi' },
+    { e: '👩‍🎤', n: 'Singer' },
+    { e: '👩‍🎨', n: 'Kalakar' },
+    { e: '💃', n: 'Dancer' },
+    { e: '🧕', n: 'Hijabwali' },
+    { e: '👰', n: 'Dulhan' },
+    { e: '🤶', n: 'Nani' },
+    { e: '🧝‍♀️', n: 'Elf Didi' },
+    { e: '🦸‍♀️', n: 'Hero Didi' },
+    { e: '🧙‍♀️', n: 'Jadugaarni' },
+    { e: '🧚‍♀️', n: 'Pari' },
+    { e: '👸', n: 'Princess' },
+    { e: '🧜‍♀️', n: 'Jalpari' },
+    { e: '🕵️‍♀️', n: 'Detective' },
+  ],
+  other: [
+    { e: '🧑', n: 'Neutral' },
+    { e: '🧑‍💻', n: 'Coder' },
+    { e: '🧑‍🎓', n: 'Student' },
+    { e: '🧑‍🎨', n: 'Artist' },
+    { e: '🧑‍🚀', n: 'Astronaut' },
+    { e: '🧑‍🍳', n: 'Chef' },
+    { e: '🧑‍🌾', n: 'Farmer' },
+    { e: '🧑‍🏫', n: 'Teacher' },
+    { e: '🧑‍🔧', n: 'Mistri' },
+    { e: '🧑‍🎤', n: 'Singer' },
+    { e: '🧙', n: 'Jadugaar' },
+    { e: '🦸', n: 'Hero' },
+    { e: '🤖', n: 'Robot' },
+    { e: '👾', n: 'Gamer' },
+    { e: '🎭', n: 'Natakbaaz' },
+    { e: '🦊', n: 'Fox' },
+    { e: '🐼', n: 'Panda' },
+    { e: '🦁', n: 'Lion' },
+    { e: '🐯', n: 'Tiger' },
+    { e: '🦅', n: 'Eagle' },
+    { e: '🌟', n: 'Star' },
+    { e: '⚡', n: 'Bijli' },
+    { e: '🔥', n: 'Aag' },
+    { e: '💫', n: 'Sitara' },
+    { e: '🎯', n: 'Nishana' },
+  ]
+};
+
+// ===================== AUTH TABS =====================
+function switchTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
+  if (tab === 'register') renderAvatarGrid(state.selectedGender);
+}
+
+function selectGender(g) {
+  state.selectedGender = g;
+  ['male','female','other'].forEach(x => {
+    document.getElementById('g-' + x).classList.toggle('active', x === g);
+  });
+  // Reset avatar selection and re-render grid
+  state.selectedAvatar = null;
+  renderAvatarGrid(g);
+}
+
+function renderAvatarGrid(gender) {
+  const grid = document.getElementById('avatar-grid');
+  if (!grid) return;
+  const list = AVATARS[gender] || AVATARS.male;
+  grid.innerHTML = list.map((a, i) => `
+    <div class="avatar-cell${state.selectedAvatar === i ? ' selected' : ''}"
+         onclick="selectAvatar(${i})"
+         title="${a.n}">
+      ${a.e}
+    </div>
+  `).join('');
+  // Auto-select first if nothing selected
+  if (state.selectedAvatar === null) selectAvatar(0);
+}
+
+function selectAvatar(idx) {
+  state.selectedAvatar = idx;
+  const gender = state.selectedGender;
+  const list = AVATARS[gender] || AVATARS.male;
+  const chosen = list[idx];
+
+  // Update grid highlight
+  document.querySelectorAll('.avatar-cell').forEach((c, i) => {
+    c.classList.toggle('selected', i === idx);
+  });
+
+  // Update preview
+  const prev = document.getElementById('avatar-preview');
+  const prevName = document.getElementById('avatar-preview-name');
+  if (prev) prev.textContent = chosen.e;
+  if (prevName) prevName.textContent = chosen.n;
+}
+
+function updateBioCount(el) {
+  const words = el.value.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('bio-count').textContent = words;
+}
+
+// ===================== LOGIN =====================
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const pin = document.getElementById('login-pin').value.trim();
+  const errEl = document.getElementById('login-err');
+  errEl.classList.remove('show');
+
+  if (!username || pin.length !== 4) {
+    errEl.textContent = 'Username और 4 अंक PIN डालें।';
+    errEl.classList.add('show');
+    return;
+  }
+
+  try {
+    const res = await apiCall('/login.php', { username, pin, device: getDeviceHash() });
+    if (res.success) {
+      state.user = res.user;
+      localStorage.setItem('op_user', JSON.stringify(res.user));
+      localStorage.setItem('op_token', res.token);
+      initHome();
+      showScreen('home');
+    } else {
+      errEl.textContent = res.message || 'Username या PIN गलत है।';
+      errEl.classList.add('show');
+    }
+  } catch {
+    // Demo mode — offline testing
+    demoLogin(username);
+  }
+}
+
+function demoLogin(username) {
+  const avatarList = AVATARS[state.selectedGender] || AVATARS.male;
+  const avatarEmoji = avatarList[state.selectedAvatar ?? 0]?.e || '👤';
+  state.user = {
+    id: 'demo_' + Date.now(),
+    username: username || 'DemoUser',
+    gender: state.selectedGender,
+    avatar: avatarEmoji,
+    bio: 'Demo account',
+    city: 'Jabalpur',
+    state: 'MP'
+  };
+  localStorage.setItem('op_user', JSON.stringify(state.user));
+  initHome();
+  showScreen('home');
+  showToast('Demo mode — backend connect nahi hua');
+}
+
+// ===================== REGISTER =====================
+async function doRegister() {
+  const username = document.getElementById('reg-username').value.trim();
+  const pin = document.getElementById('reg-pin').value.trim();
+  const bio = document.getElementById('reg-bio').value.trim();
+  const errEl = document.getElementById('reg-err');
+  errEl.classList.remove('show');
+
+  if (username.length < 3) {
+    errEl.textContent = 'Username कम से कम 3 अक्षर का होना चाहिए।';
+    errEl.classList.add('show'); return;
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    errEl.textContent = 'Username में सिर्फ letters, numbers और _ allowed।';
+    errEl.classList.add('show'); return;
+  }
+  if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+    errEl.textContent = 'PIN exactly 4 अंक का होना चाहिए।';
+    errEl.classList.add('show'); return;
+  }
+
+  try {
+    const avatarList = AVATARS[state.selectedGender] || AVATARS.male;
+    const avatarEmoji = avatarList[state.selectedAvatar ?? 0]?.e || '👤';
+
+    const res = await apiCall('/register.php', {
+      username, pin, gender: state.selectedGender,
+      avatar: avatarEmoji,
+      bio, device: getDeviceHash()
+    });
+    if (res.success) {
+      state.user = res.user;
+      localStorage.setItem('op_user', JSON.stringify(res.user));
+      localStorage.setItem('op_token', res.token);
+      initHome();
+      showScreen('home');
+      showToast('स्वागत है ' + username + '! 🎉');
+    } else {
+      errEl.textContent = res.message || 'Username पहले से लिया हुआ है।';
+      errEl.classList.add('show');
+    }
+  } catch {
+    demoLogin(username);
+  }
+}
+
+// ===================== HOME INIT =====================
+function initHome() {
+  if (!state.user) return;
+  updateProfileUI();
+  loadOnlineUsers();
+  document.getElementById('chat-badge').classList.remove('hidden');
+}
+
+function updateProfileUI() {
+  const u = state.user;
+  const emojiMap = { male: '👨', female: '👩', other: '🧑' };
+  const displayEmoji = u.avatar || emojiMap[u.gender] || '👤';
+  document.getElementById('profile-avatar').textContent = displayEmoji;
+  document.getElementById('profile-username').textContent = u.username;
+  document.getElementById('profile-location').textContent = (u.city || '') + (u.state ? ', ' + u.state : '');
+  document.getElementById('profile-bio').textContent = u.bio || 'Bio नहीं लिखी अभी तक।';
+}
+
+// ===================== ONLINE USERS =====================
+async function loadOnlineUsers() {
+  try {
+    const res = await apiCall('/users.php', {});
+    state.onlineUsers = res.users || [];
+  } catch {
+    // Demo data
+    state.onlineUsers = [
+      { id: '1', username: 'RahulCoder', gender: 'male', bio: 'Python सीख रहा हूँ', city: 'Jabalpur', state: 'MP' },
+      { id: '2', username: 'Sunita_mp', gender: 'female', bio: 'नई दोस्ती पसंद है', city: 'Jabalpur', state: 'MP' },
+      { id: '3', username: 'ManishBhai', gender: 'male', bio: 'Cricket fan, Mandla से', city: 'Mandla', state: 'MP' },
+      { id: '4', username: 'Pooja_jbp', gender: 'female', bio: 'Books and chai ☕', city: 'Jabalpur', state: 'MP' },
+      { id: '5', username: 'TechKumar', gender: 'male', bio: 'Android developer', city: 'Bhopal', state: 'MP' },
+    ];
+  }
+
+  const count = state.onlineUsers.length;
+  const userCity = state.user?.city || 'आपके शहर';
+  document.getElementById('area-count').textContent = count;
+  document.getElementById('area-room-meta').textContent = userCity + ' के लोग';
+  document.getElementById('online-count-label').textContent = count + ' online';
+  renderOnlineList(state.onlineUsers);
+}
+
+function renderOnlineList(users) {
+  const emojiMap = { male: '👨', female: '👩', other: '🧑' };
+  const list = document.getElementById('online-list');
+  list.innerHTML = users.length ? users.map(u => {
+    const dp = u.avatar || emojiMap[u.gender] || '👤';
+    return `
+    <div class="online-user-card" onclick="openDM('${u.id}','${dp}','${u.username}','${u.bio||''}')">
+      <div class="ouc-avatar">${dp}</div>
+      <div class="ouc-info">
+        <div class="ouc-name">${escHtml(u.username)}</div>
+        <div class="ouc-loc">📍 ${escHtml(u.city || '')}${u.state ? ', ' + u.state : ''}</div>
+        <div class="ouc-bio">${escHtml(u.bio || '')}</div>
+      </div>
+      <button class="ouc-chat">बात करें</button>
+    </div>`;
+  }).join('') : `<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">कोई online नहीं</div><div class="empty-sub">थोड़ी देर बाद देखो।</div></div>`;
+}
+
+function filterOnline(type, el) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const filtered = type === 'all' ? state.onlineUsers
+    : type === 'area' ? state.onlineUsers.filter(u => u.city === state.user?.city)
+    : state.onlineUsers.filter(u => u.gender === type);
+  renderOnlineList(filtered);
+}
+
+// ===================== ROOM / CHAT OPEN =====================
+function openRoom(type, name) {
+  state.currentChat = type;
+  state.currentChatType = 'room';
+  document.getElementById('chat-name').textContent = name;
+  document.getElementById('chat-status').textContent = 'Group Room';
+  document.getElementById('chat-messages').innerHTML = '<div class="date-divider"><span>आज</span></div>';
+  showScreen('chat');
+  startPolling();
+}
+
+function openDM(userId, emoji, username, bio) {
+  state.currentChat = userId;
+  state.currentChatType = 'dm';
+  document.getElementById('chat-name').textContent = emoji + ' ' + username;
+  document.getElementById('chat-status').textContent = 'online';
+  document.getElementById('chat-messages').innerHTML = '<div class="date-divider"><span>आज</span></div>';
+  showScreen('chat');
+  startPolling();
+}
+
+function openAIChat(charId) {
+  const char = AI_CHARS[charId];
+  if (!char) return;
+  state.currentChat = charId;
+  state.currentChatType = 'ai';
+  state.messages[charId] = state.messages[charId] || [];
+  document.getElementById('chat-name').textContent = char.emoji + ' ' + char.name + ' (AI)';
+  document.getElementById('chat-status').textContent = 'Digital Companion';
+  renderMessages(charId);
+  showScreen('chat');
+
+  if (state.messages[charId].length === 0) {
+    setTimeout(() => showTyping(charId), 600);
+    setTimeout(async () => {
+      hideTyping();
+      const greeting = await getAIGreeting(charId);
+      addMessage(charId, 'them', greeting);
+    }, 2000);
+  }
+}
+
+// ===================== AI CHAT =====================
+async function getAIGreeting(charId) {
+  const char = AI_CHARS[charId];
+  const greetings = {
+    roshni: 'नमस्ते! 😊 आज कैसा दिन रहा? बताओ, मैं यहाँ हूँ।',
+    panditji: 'राम राम! 🙏 बताओ, क्या जानना चाहते हो? ज्योतिष, आध्यात्म, या जीवन की कोई उलझन?',
+    priya: 'Heyyyy! 🎉 Kya chal raha hai? Bata bata bata!',
+    rahul: 'भाई क्या हाल है! 😄 बता क्या चल रहा है आजकल?',
+    kavita: 'अरे आ गए! 😊 बताओ क्या हो रहा है, सुन रही हूँ।',
+    ananya: 'Hello! किस subject में help चाहिए? या career के बारे में बात करनी है?',
+    suresh: 'Bhai! Tech ka koi sawaal? Internet, mobile, app — kuch bhi poocho!'
+  };
+  return greetings[charId] || 'नमस्ते! कैसे हो?';
+}
+
+async function sendAIMessage(charId, userText) {
+  const char = AI_CHARS[charId];
+  const history = (state.messages[charId] || []).slice(-10);
+  const messages = history.map(m => ({
+    role: m.sender === 'me' ? 'user' : 'assistant',
+    content: m.text
+  }));
+  messages.push({ role: 'user', content: userText });
+
+  try {
+    const res = await fetch(`${API_BASE}/ai.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Token': localStorage.getItem('op_token') || '' },
+      body: JSON.stringify({ character: charId, messages, system: char.prompt })
+    });
+    const data = await res.json();
+    return data.reply || '...';
+  } catch {
+    // Demo AI responses
+    const demoReplies = {
+      roshni: ['हाँ, समझ सकती हूँ। आगे बताओ।', 'वाकई? ये सुनकर अच्छा लगा।', 'सब ठीक हो जाएगा। 😊', 'तुम अकेले नहीं हो।'],
+      panditji: ['शुभम भवतु! 🙏 आपका दिन अच्छा रहेगा।', 'ग्रहों की चाल से ऐसा लग रहा है...', 'धैर्य रखें, समय सब ठीक करेगा।'],
+      priya: ['Yaar sach mein?! 😱', 'OMG no way!', 'Hahaha ye toh mast tha! 😂', 'Seriously bata kya hua?'],
+      rahul: ['भाई एकदम सही बात! 😄', 'यार ये तो होता है।', 'Cricket देखा कल? क्या match था!', 'बढ़िया भाई बढ़िया!'],
+      kavita: ['हाँ बेटा, सही सोच रहे हो।', 'ये normal है, मत घबराओ।', 'जीवन में ऐसा होता है।', 'मैं समझती हूँ।'],
+      ananya: ['Great question! इसके लिए...', 'Focus करो, success मिलेगी।', 'Consistent rehna zaroori hai.'],
+      suresh: ['Simple trick hai iske liye!', 'Bhai ye setting check karo.', 'Tech mein koi bhi problem solve ho sakti hai!']
+    };
+    const arr = demoReplies[charId] || ['हाँ, बताओ।'];
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+}
+
+// ===================== MESSAGES =====================
+function addMessage(chatId, sender, text) {
+  if (!state.messages[chatId]) state.messages[chatId] = [];
+  const msg = { id: Date.now(), sender, text, time: new Date().toLocaleTimeString('hi', { hour: '2-digit', minute: '2-digit' }) };
+  state.messages[chatId].push(msg);
+  renderMessages(chatId);
+}
+
+function renderMessages(chatId) {
+  const container = document.getElementById('chat-messages');
+  const msgs = state.messages[chatId] || [];
+  const existingTyping = container.querySelector('.typing-indicator');
+
+  container.innerHTML = '<div class="date-divider"><span>आज</span></div>';
+  msgs.forEach(msg => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'msg-wrapper ' + (msg.sender === 'me' ? 'mine' : 'theirs');
+    wrapper.innerHTML = `
+      <div class="msg-bubble">${escHtml(msg.text)}</div>
+      <div class="msg-meta">
+        <span class="msg-time">${msg.time}</span>
+        ${msg.sender === 'me' ? '<span class="msg-tick">✓✓</span>' : ''}
+        ${msg.sender !== 'me' ? `<button class="msg-report-btn" onclick="showReport('${msg.id}','msg')">···</button>` : ''}
+      </div>`;
+    container.appendChild(wrapper);
+  });
+
+  if (existingTyping) container.appendChild(existingTyping);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showTyping(chatId) {
+  const container = document.getElementById('chat-messages');
+  const t = document.createElement('div');
+  t.className = 'msg-wrapper theirs';
+  t.innerHTML = `<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  container.appendChild(t);
+  container.scrollTop = container.scrollHeight;
+}
+
+function hideTyping() {
+  document.querySelector('.typing-indicator')?.closest('.msg-wrapper')?.remove();
+}
+
+// ===================== SEND MESSAGE =====================
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  addMessage(state.currentChat, 'me', text);
+
+  if (state.currentChatType === 'ai') {
+    showTyping(state.currentChat);
+    const reply = await sendAIMessage(state.currentChat, text);
+    hideTyping();
+    addMessage(state.currentChat, 'them', reply);
+    if (state.soundEnabled) playPing();
+  } else {
+    // Send to API
+    try {
+      await apiCall('/send.php', {
+        to: state.currentChat,
+        type: state.currentChatType,
+        text
+      });
+    } catch { /* offline — message shown locally */ }
+  }
+}
+
+function handleEnter(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResizeInput(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+// ===================== LONG POLL =====================
+function startPolling() {
+  stopPolling();
+  if (state.currentChatType === 'ai') return;
+  state.pollTimer = setInterval(async () => {
+    try {
+      const res = await apiCall('/poll.php', {
+        chat: state.currentChat,
+        type: state.currentChatType,
+        last: getLastMsgId()
+      });
+      if (res.messages?.length) {
+        res.messages.forEach(m => addMessage(state.currentChat, 'them', m.text));
+        if (state.soundEnabled) playPing();
+        buzzTab();
+      }
+    } catch { /* ignore */ }
+  }, 3000);
+}
+
+function stopPolling() {
+  if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+}
+
+function leaveChat() {
+  stopPolling();
+  const prev = document.referrer ? 'chats' : 'home';
+  showScreen('home');
+}
+
+function getLastMsgId() {
+  const msgs = state.messages[state.currentChat] || [];
+  return msgs.length ? msgs[msgs.length - 1].id : 0;
+}
+
+// ===================== TAB BUZZER =====================
+let buzzerInterval = null;
+const originalTitle = 'OP Chat';
+function buzzTab() {
+  if (!document.hidden) return;
+  let toggle = true;
+  if (buzzerInterval) return;
+  buzzerInterval = setInterval(() => {
+    document.title = toggle ? '💬 नया संदेश! — OP Chat' : originalTitle;
+    toggle = !toggle;
+  }, 1000);
+}
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && buzzerInterval) {
+    clearInterval(buzzerInterval);
+    buzzerInterval = null;
+    document.title = originalTitle;
+  }
+});
+
+// ===================== PING SOUND =====================
+function playPing() {
+  try {
+    const ctx = new AudioContext();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    g.gain.setValueAtTime(0.15, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    o.start(); o.stop(ctx.currentTime + 0.3);
+  } catch { /* no audio support */ }
+}
+
+// ===================== REPORT =====================
+function showReport(msgId, type) {
+  document.getElementById('report-overlay').classList.add('show');
+  state._reportTarget = { msgId, type };
+}
+function closeReport(e) {
+  if (e.target === document.getElementById('report-overlay'))
+    document.getElementById('report-overlay').classList.remove('show');
+}
+async function submitReport(reason) {
+  document.getElementById('report-overlay').classList.remove('show');
+  try {
+    await apiCall('/report.php', { ...state._reportTarget, reason });
+  } catch { /* store locally */ }
+  showToast('Report भेज दी गई। ✅');
+}
+
+// ===================== CREATE ROOM =====================
+function showCreateRoom() {
+  document.getElementById('create-room-overlay').classList.add('show');
+}
+function closeCreateRoom(e) {
+  if (e.target === document.getElementById('create-room-overlay'))
+    document.getElementById('create-room-overlay').classList.remove('show');
+}
+function setRoomType(type) {
+  state.roomType = type;
+  document.getElementById('rt-open').classList.toggle('active', type === 'open');
+  document.getElementById('rt-private').classList.toggle('active', type === 'private');
+  document.getElementById('room-pass-group').style.display = type === 'private' ? 'flex' : 'none';
+}
+async function createRoom() {
+  const name = document.getElementById('room-name-input').value.trim();
+  if (!name) { showToast('Room का नाम डालो'); return; }
+  document.getElementById('create-room-overlay').classList.remove('show');
+  try {
+    const res = await apiCall('/rooms.php', {
+      action: 'create', name, type: state.roomType,
+      password: document.getElementById('room-pass-input').value.trim()
+    });
+    if (res.code) showToast('Room बना! Code: ' + res.code);
+    openRoom(res.id || 'new', name);
+  } catch {
+    showToast('Room Code: ' + Math.random().toString(36).substr(2,6).toUpperCase() + ' (Demo)');
+  }
+}
+
+// ===================== PROFILE ACTIONS =====================
+function toggleSound() {
+  state.soundEnabled = !state.soundEnabled;
+  document.getElementById('sound-status').textContent = state.soundEnabled ? 'चालू' : 'बंद';
+  showToast('Sound ' + (state.soundEnabled ? 'चालू ✅' : 'बंद 🔕'));
+}
+function showNotifInfo() { showToast('Notifications settings में जाएं'); }
+function editProfile() { showToast('जल्द आ रहा है'); }
+function changePIN() { showToast('जल्द आ रहा है'); }
+function showGrievance() { showToast('grievance@mxpin.in पर mail करें'); }
+function doLogout() {
+  if (!confirm('Logout करें?')) return;
+  localStorage.removeItem('op_user');
+  localStorage.removeItem('op_token');
+  state.user = null;
+  showScreen('auth');
+}
+function toggleEmoji() { showToast('Emoji picker जल्द आ रहा है'); }
+
+// ===================== TOAST =====================
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ===================== API HELPER =====================
+async function apiCall(endpoint, body) {
+  const token = localStorage.getItem('op_token') || '';
+  const res = await fetch(API_BASE + endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Token': token },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(res.status);
+  return res.json();
+}
+
+// ===================== DEVICE FINGERPRINT =====================
+function getDeviceHash() {
+  const raw = navigator.userAgent + screen.width + screen.height + navigator.language + Intl.DateTimeFormat().resolvedOptions().timeZone;
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(16);
+}
+
+// ===================== ESCAPE HTML =====================
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===================== SERVICE WORKER =====================
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
